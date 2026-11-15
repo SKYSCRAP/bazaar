@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bazaar. | Premium Hardware & Gear</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #f4f4f5; }
+        ::-webkit-scrollbar-thumb { background: #86BC25; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #6fa01b; }
+    </style>
+</head>
+<body class="bg-white text-zinc-900 antialiased min-h-screen flex flex-col">
+
+    <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col space-y-2 pointer-events-none"></div>
+
+    <!-- LOGIN SCREEN -->
+    <div id="auth-screen" class="min-h-screen flex flex-col items-center justify-center bg-zinc-950 px-4 py-12 relative overflow-hidden">
+        <div class="absolute inset-0 bg-[radial-gradient(#86BC25_1px,transparent_1px)] [background-size:28px_28px] opacity-15 pointer-events-none"></div>
+
+        <div class="flex items-center space-x-1 mb-6 z-10">
+            <span class="text-3xl font-extrabold tracking-tight text-white">Bazaar<span class="text-[#86BC25] text-4xl leading-none">.</span></span>
+        </div>
+
+        <div class="w-full max-w-md bg-white rounded-none border-t-4 border-[#86BC25] shadow-2xl p-8 z-10">
+            <div class="flex items-center justify-between mb-1">
+                <h1 id="auth-title" class="text-2xl font-bold text-zinc-950">Bazaar Sign In</h1>
+                <span class="text-[10px] font-bold uppercase tracking-widest bg-zinc-100 text-zinc-600 px-2 py-1">Internal Portal</span>
+            </div>
+            <p id="auth-subtitle" class="text-xs text-zinc-500 mb-6">Authenticate with your Engagement ID to access approved gear.</p>
+
+            <div id="auth-error" class="hidden mb-4 p-3 bg-rose-50 border-l-4 border-rose-600 text-rose-700 text-xs font-medium flex items-center gap-2">
+                <i class="fa-solid fa-circle-exclamation"></i>
+                <span id="auth-error-text">Invalid credentials.</span>
+            </div>
+
+            <form id="auth-form" onsubmit="handleAuthSubmit(event)" class="space-y-4">
+                <div>
+                    <label for="login-username" class="block text-xs font-bold uppercase tracking-wider text-zinc-700 mb-1">Consultant ID / Username</label>
+                    <input type="text" id="login-username" required placeholder="Enter username (e.g. admin)"
+                        class="w-full px-3.5 py-2.5 text-sm border border-zinc-300 focus:outline-none focus:border-[#86BC25] focus:ring-1 focus:ring-[#86BC25]">
+                </div>
+
+                <div>
+                    <label for="login-password" class="block text-xs font-bold uppercase tracking-wider text-zinc-700 mb-1">Passcode</label>
+                    <input type="password" id="login-password" required placeholder="Enter password (e.g. 1234)"
+                        class="w-full px-3.5 py-2.5 text-sm border border-zinc-300 focus:outline-none focus:border-[#86BC25] focus:ring-1 focus:ring-[#86BC25]">
+                </div>
+
+                <button type="submit" id="login-btn"
+                    class="w-full bg-zinc-950 hover:bg-zinc-800 active:scale-[0.99] text-white font-bold py-3 px-4 transition text-sm flex items-center justify-center gap-2">
+                    <span>Access Marketplace</span>
+                    <span class="w-2 h-2 rounded-full bg-[#86BC25]"></span>
+                </button>
+            </form>
+
+            <div class="mt-4 pt-4 border-t border-zinc-200">
+                <button type="button" id="demo-fill-btn" onclick="fillDemoAccount()"
+                    class="w-full bg-zinc-100 hover:bg-[#86BC25]/15 text-zinc-800 font-semibold py-2.5 px-3 transition text-xs flex items-center justify-center gap-2 border border-zinc-200">
+                    <i class="fa-solid fa-bolt text-[#86BC25]"></i>
+                    <span>Auto-Fill Partner Demo Account (admin / 1234)</span>
+                </button>
+            </div>
+
+            <!-- TOGGLE TO REGISTER IS BACK -->
+            <div class="mt-6 text-center text-xs text-zinc-600">
+                <span id="auth-toggle-prompt">New joiner on the bench?</span>
+                <button type="button" id="auth-toggle-btn" onclick="toggleAuthMode()" class="text-zinc-950 hover:text-[#86BC25] underline font-bold ml-1">
+                    Register Consultant ID
+                </button>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- STOREFRONT -->
+    <div id="storefront-app" class="hidden flex-1 flex flex-col bg-zinc-50">
+
+    <header class="sticky top-0 z-40 bg-zinc-950 text-white border-b border-zinc-800">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16 gap-4">
+                
+                <div class="flex items-center space-x-1 cursor-pointer" onclick="resetFilters()">
+                    <span class="text-2xl font-extrabold tracking-tight text-white">Bazaar<span class="text-[#86BC25] text-3xl leading-none">.</span></span>
+                </div>
+
+                <div class="flex-1 max-w-2xl mx-4">
+                    <div class="relative flex">
+                        <select id="category-select" class="hidden sm:block bg-zinc-900 text-zinc-200 font-medium text-xs uppercase tracking-wider px-3 border border-zinc-700 border-r-0 focus:outline-none cursor-pointer">
+                            <option value="all">All Practice Areas</option>
+                            <option value="Electronics">Tech & Laptops</option>
+                            <option value="Audio">Client-Call Audio</option>
+                            <option value="Wearables">Executive Wearables</option>
+                            <option value="Home & Office">Home Office Setup</option>
+                        </select>
+                        <input type="text" id="search-input" placeholder="Search billable gear, headsets, monitors..." 
+                            class="w-full bg-white text-zinc-950 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#86BC25]">
+                        <button id="search-btn" onclick="handleSearch()" class="bg-[#86BC25] hover:bg-[#76a81e] text-zinc-950 px-5 font-bold transition hidden sm:flex items-center justify-center">
+                            <i class="fa-solid fa-magnifying-glass"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="flex items-center space-x-4 sm:space-x-6">
+                    <div class="flex items-center space-x-3">
+                        <div class="text-xs text-right">
+                            <p id="user-greeting" class="text-zinc-400">Consultant: <span id="display-username" class="font-bold text-white">admin</span></p>
+                            <button id="logout-btn" onclick="logoutUser()" class="text-[#86BC25] hover:underline font-semibold text-xs">
+                                End Session
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <button id="cart-btn" onclick="toggleCartDrawer(true)" class="relative flex items-center space-x-2 hover:text-[#86BC25] transition p-2 focus:outline-none">
+                        <div class="relative">
+                            <i class="fa-solid fa-briefcase text-xl"></i>
+                            <span id="cart-badge" class="absolute -top-2 -right-3 bg-[#86BC25] text-zinc-950 text-xs font-extrabold w-5 h-5 rounded-full flex items-center justify-center">0</span>
+                        </div>
+                        <span class="hidden sm:inline font-bold text-xs uppercase tracking-wider ml-1">Expense Bag</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white border-b border-zinc-200 text-xs uppercase tracking-wider py-2.5 px-4 sm:px-8 text-zinc-700">
+            <div class="max-w-7xl mx-auto flex items-center space-x-6 overflow-x-auto whitespace-nowrap">
+                <button onclick="filterByCategory('all')" class="nav-cat-btn hover:text-[#86BC25] font-bold transition text-zinc-950">All Deliverables</button>
+                <button onclick="filterByCategory('Electronics')" class="nav-cat-btn hover:text-[#86BC25] font-semibold transition text-zinc-600">Tech & Peripherals</button>
+                <button onclick="filterByCategory('Audio')" class="nav-cat-btn hover:text-[#86BC25] font-semibold transition text-zinc-600">Noise-Canceling Audio</button>
+                <button onclick="filterByCategory('Wearables')" class="nav-cat-btn hover:text-[#86BC25] font-semibold transition text-zinc-600">Smart Wearables</button>
+                <button onclick="filterByCategory('Home & Office')" class="nav-cat-btn hover:text-[#86BC25] font-semibold transition text-zinc-600">Ergonomic Office</button>
+                <span class="text-zinc-300">|</span>
+                <span class="text-zinc-900 font-bold flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-[#86BC25]"></span> 100% Client-Billable Shipping</span>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
+        <div class="bg-zinc-950 text-white border-l-8 border-[#86BC25] p-6 sm:p-10 mb-8 shadow-xl flex flex-col md:flex-row items-center justify-between relative overflow-hidden">
+            <div class="max-w-xl z-10">
+                <div class="flex items-center gap-2 mb-3">
+                    <span class="w-2.5 h-2.5 rounded-full bg-[#86BC25]"></span>
+                    <span class="text-[#86BC25] text-xs font-bold uppercase tracking-widest">Q4 Engagement Equipment Grant</span>
+                </div>
+                <h1 class="text-3xl sm:text-4xl font-extrabold tracking-tight mb-3 leading-tight">Make an Impact That Matters—With Better Desk Gear<span class="text-[#86BC25]">.</span></h1>
+                <p class="text-zinc-300 text-sm sm:text-base mb-6">Pre-approved noise-canceling headphones for airport lounges, 4K monitors for massive Excel models, and ergonomic chairs for late-night slide decks.</p>
+                <button onclick="scrollToGrid()" class="bg-[#86BC25] hover:bg-[#76a81e] text-zinc-950 font-extrabold px-6 py-3 transition text-sm uppercase tracking-wider">
+                    Browse Approved Catalog <i class="fa-solid fa-arrow-right ml-2"></i>
+                </button>
+            </div>
+            <div class="mt-6 md:mt-0 z-10 grid grid-cols-2 gap-3 w-full md:w-auto">
+                <div class="bg-zinc-900 p-4 border border-zinc-800">
+                    <p class="text-[#86BC25] text-xl font-extrabold">24h</p>
+                    <p class="text-xs font-semibold text-zinc-300 mt-1">Partner-Speed Delivery</p>
+                </div>
+                <div class="bg-zinc-900 p-4 border border-zinc-800">
+                    <p class="text-[#86BC25] text-xl font-extrabold">0-Click</p>
+                    <p class="text-xs font-semibold text-zinc-300 mt-1">Expense Reimbursement</p>
+                </div>
+                <div class="bg-zinc-900 p-4 border border-zinc-800 col-span-2">
+                    <p class="text-xs text-zinc-400">Charge Code: <span class="text-white font-mono font-bold">DLT-TECH-2026-WIN</span></p>
+                </div>
+            </div>
+        </div>
+
+        <div id="product-grid-anchor" class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4 bg-white p-4 border border-zinc-200">
+            <div>
+                <h2 id="results-heading" class="text-lg font-extrabold text-zinc-950 uppercase tracking-tight">Approved Consultant Deliverables</h2>
+                <p id="results-count" class="text-xs text-zinc-500">Showing all items</p>
+            </div>
+            <div class="flex items-center space-x-3 w-full sm:w-auto">
+                <label for="sort-select" class="text-xs font-bold uppercase tracking-wider text-zinc-600 whitespace-nowrap">Prioritize by:</label>
+                <select id="sort-select" onchange="sortProducts()" class="bg-zinc-50 border border-zinc-300 text-sm px-3 py-2 focus:outline-none focus:border-[#86BC25] w-full sm:w-auto text-zinc-900">
+                    <option value="featured">Partner Recommended</option>
+                    <option value="price-low">Budget Impact: Low to High</option>
+                    <option value="price-high">Budget Impact: High to Low</option>
+                    <option value="rating">Peer Review Score</option>
+                </select>
+            </div>
+        </div>
+
+        <div id="product-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"></div>
+
+        <div id="empty-state" class="hidden text-center py-16 bg-white border border-zinc-200 mt-4">
+            <i class="fa-solid fa-folder-open text-zinc-300 text-5xl mb-3"></i>
+            <h3 class="text-lg font-bold text-zinc-900">No deliverables match your query</h3>
+            <p class="text-zinc-500 text-sm mt-1">Adjust your search keywords or reset the practice area filter.</p>
+            <button onclick="resetFilters()" class="mt-4 bg-zinc-950 text-white px-5 py-2 text-xs font-bold uppercase tracking-wider hover:bg-zinc-800 transition">Reset Filters</button>
+        </div>
+    </main>
+
+    <!-- CART DRAWER -->
+    <div id="cart-drawer" class="fixed inset-0 z-50 overflow-hidden hidden" aria-labelledby="slide-over-title" role="dialog" aria-modal="true">
+        <div id="cart-backdrop" onclick="toggleCartDrawer(false)" class="absolute inset-0 bg-zinc-950/60 backdrop-blur-xs transition-opacity opacity-0 duration-300"></div>
+
+        <div class="fixed inset-y-0 right-0 max-w-full flex pl-10">
+            <div id="cart-panel" class="w-screen max-w-md bg-white shadow-2xl transform transition-transform duration-300 translate-x-full flex flex-col border-l-4 border-[#86BC25]">
+                
+                <div class="flex items-center justify-between px-6 py-4 bg-zinc-950 text-white">
+                    <div class="flex items-center space-x-2">
+                        <span class="w-2.5 h-2.5 rounded-full bg-[#86BC25]"></span>
+                        <h2 id="slide-over-title" class="text-base font-extrabold uppercase tracking-wider">Expense Requisition (<span id="cart-item-count-title">0</span>)</h2>
+                    </div>
+                    <button onclick="toggleCartDrawer(false)" class="text-zinc-400 hover:text-white p-2 transition focus:outline-none">
+                        <i class="fa-solid fa-xmark text-xl"></i>
+                    </button>
+                </div>
+
+                <div class="flex-1 overflow-y-auto px-6 py-4 divide-y divide-zinc-200" id="cart-items-container">
+                </div>
+
+                <div class="border-t border-zinc-200 bg-zinc-50 px-6 py-4 space-y-3">
+                    <div class="flex justify-between text-sm text-zinc-600">
+                        <span>Equipment Subtotal</span>
+                        <span id="cart-subtotal" class="font-bold text-zinc-950">$0.00</span>
+                    </div>
+                    <div class="flex justify-between text-sm text-zinc-600">
+                        <span>Courier Logistics</span>
+                        <span class="text-[#6fa01b] font-bold">BILLED TO CLIENT</span>
+                    </div>
+                    <div class="border-t border-zinc-300 pt-3 flex justify-between text-base font-extrabold text-zinc-950">
+                        <span>Total Requisition</span>
+                        <span id="cart-total" class="text-xl text-zinc-950">$0.00</span>
+                    </div>
+
+                    <button id="checkout-btn" onclick="checkout()" class="w-full bg-[#86BC25] hover:bg-[#76a81e] text-zinc-950 font-extrabold py-3 px-4 transition flex items-center justify-center space-x-2 uppercase tracking-wider text-xs">
+                        <i class="fa-solid fa-check-double"></i>
+                        <span>Submit Expense Order</span>
+                    </button>
+                    <button onclick="toggleCartDrawer(false)" class="w-full bg-white hover:bg-zinc-100 text-zinc-800 font-semibold py-2 px-4 border border-zinc-300 transition text-xs uppercase tracking-wider">
+                        Continue Browsing
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="bg-zinc-950 text-zinc-400 text-sm mt-16 border-t-4 border-[#86BC25]">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 grid grid-cols-1 md:grid-cols-4 gap-8">
+            <div>
+                <div class="flex items-center space-x-1 text-white mb-4">
+                    <span class="text-xl font-extrabold tracking-tight">Bazaar<span class="text-[#86BC25] text-2xl leading-none">.</span></span>
+                </div>
+                <p class="text-xs text-zinc-400 leading-relaxed">Internal hardware procurement & ergonomic excellence portal. Powered by Java Spring Boot, H2 SQL, and Playwright E2E QA.</p>
+            </div>
+            <div>
+                <h4 class="text-white font-bold uppercase tracking-wider text-xs mb-3">Practice Catalogs</h4>
+                <ul class="space-y-2 text-xs">
+                    <li><a href="#" onclick="filterByCategory('Electronics'); return false;" class="hover:text-[#86BC25]">Tech & Peripherals</a></li>
+                    <li><a href="#" onclick="filterByCategory('Audio'); return false;" class="hover:text-[#86BC25]">Noise-Canceling Audio</a></li>
+                    <li><a href="#" onclick="filterByCategory('Wearables'); return false;" class="hover:text-[#86BC25]">Smart Wearables</a></li>
+                    <li><a href="#" onclick="filterByCategory('Home & Office'); return false;" class="hover:text-[#86BC25]">Ergonomic Office</a></li>
+                </ul>
+            </div>
+            <div>
+                <h4 class="text-white font-bold uppercase tracking-wider text-xs mb-3">Consultant Support</h4>
+                <ul class="space-y-2 text-xs">
+                    <li><a href="#" class="hover:text-[#86BC25]">WBS Charge Code Lookup</a></li>
+                    <li><a href="#" class="hover:text-[#86BC25]">IT Helpdesk & Loaner Laptops</a></li>
+                    <li><a href="#" class="hover:text-[#86BC25]">Home Office Stipend Policy</a></li>
+                    <li><a href="#" class="hover:text-[#86BC25]">Partner Escalation Desk</a></li>
+                </ul>
+            </div>
+            <div>
+                <h4 class="text-white font-bold uppercase tracking-wider text-xs mb-3">Approved Payment Channels</h4>
+                <p class="text-xs mb-3 text-zinc-400">Corporate Amex & direct WBS project billing supported.</p>
+                <div class="flex space-x-3 text-xl text-[#86BC25]">
+                    <i class="fa-brands fa-cc-amex"></i>
+                    <i class="fa-brands fa-cc-visa"></i>
+                    <i class="fa-brands fa-cc-mastercard"></i>
+                    <i class="fa-solid fa-building-columns"></i>
+                </div>
+            </div>
+        </div>
+        <div class="bg-black py-4 text-center text-xs text-zinc-500 border-t border-zinc-900">
+            &copy; 2026 Bazaar. Demo Portfolio Application — Built for Clean Code & Playwright Java Automation.
+        </div>
+    </footer>
+    </div>
+
+    <!-- APPLICATION JAVASCRIPT -->
+    <script>
+        const API_BASE = '/api';
+
+        let currentUser = localStorage.getItem('bazaar_user') || null;
+        let isRegisterMode = false;
+        let allProducts = [];
+        let filteredProducts = [];
+        
+        // 1. LOAD CART FROM LOCAL STORAGE
+        let cart = JSON.parse(localStorage.getItem('bazaar_cart')) || [];
+        
+        let currentFilterCategory = 'all';
+        let currentSortOrder = 'featured';
+
+        const authScreen = document.getElementById('auth-screen');
+        const storefrontApp = document.getElementById('storefront-app');
+        const productGrid = document.getElementById('product-grid');
+        const emptyState = document.getElementById('empty-state');
+        const resultsCount = document.getElementById('results-count');
+        const resultsHeading = document.getElementById('results-heading');
+        const searchInput = document.getElementById('search-input');
+        const categorySelect = document.getElementById('category-select');
+
+        // AUTHENTICATION HANDLERS
+        function fillDemoAccount() {
+            document.getElementById('login-username').value = 'admin';
+            document.getElementById('login-password').value = '1234';
+            hideAuthError();
+        }
+
+        function toggleAuthMode() {
+            isRegisterMode = !isRegisterMode;
+            hideAuthError();
+
+            const title = document.getElementById('auth-title');
+            const subtitle = document.getElementById('auth-subtitle');
+            const btnText = document.querySelector('#login-btn span');
+            const prompt = document.getElementById('auth-toggle-prompt');
+            const toggleBtn = document.getElementById('auth-toggle-btn');
+
+            if (isRegisterMode) {
+                title.textContent = 'Register Consultant ID';
+                subtitle.textContent = 'Create a new Engagement ID in the H2 SQL Database.';
+                btnText.textContent = 'Create Account & Enter';
+                prompt.textContent = 'Already onboarded?';
+                toggleBtn.textContent = 'Sign In Instead';
+            } else {
+                title.textContent = 'Bazaar Sign In';
+                subtitle.textContent = 'Authenticate with your Engagement ID to access approved gear.';
+                btnText.textContent = 'Access Marketplace';
+                prompt.textContent = 'New joiner on the bench?';
+                toggleBtn.textContent = 'Register Consultant ID';
+            }
+        }
+
+        function showAuthError(msg) {
+            const errBox = document.getElementById('auth-error');
+            document.getElementById('auth-error-text').textContent = msg;
+            errBox.classList.remove('hidden');
+        }
+
+        function hideAuthError() {
+            document.getElementById('auth-error').classList.add('hidden');
+        }
+
+        async function handleAuthSubmit(event) {
+            event.preventDefault();
+            hideAuthError();
+
+            const username = document.getElementById('login-username').value.trim();
+            const password = document.getElementById('login-password').value.trim();
+            const endpoint = isRegisterMode ? '/register' : '/login';
+
+            try {
+                const res = await fetch(`${API_BASE}${endpoint}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+
+                const data = await res.json();
+
+                if (!res.ok) {
+                    showAuthError(data.message || 'Authentication failed.');
+                    return;
+                }
+
+                currentUser = data.username;
+                localStorage.setItem('bazaar_user', currentUser);
+                unlockStorefront();
+                showToast(`Welcome, Consultant ${currentUser}!`, 'success');
+            } catch (err) {
+                showAuthError('Cannot reach Spring Boot backend at localhost:8080.');
+            }
+        }
+
+        function logoutUser() {
+            currentUser = null;
+            localStorage.removeItem('bazaar_user');
+            cart = [];
+            localStorage.removeItem('bazaar_cart');
+            updateCartUI();
+            storefrontApp.classList.add('hidden');
+            authScreen.classList.remove('hidden');
+            document.getElementById('auth-form').reset();
+            hideAuthError();
+        }
+
+        function unlockStorefront() {
+            document.getElementById('display-username').textContent = currentUser;
+            authScreen.classList.add('hidden');
+            storefrontApp.classList.remove('hidden');
+            fetchProducts();
+            updateCartUI(); // Sync badge on load
+        }
+
+        // PRODUCT FETCHING & FILTERING
+        const FALLBACK_PRODUCTS = [
+            { id: 1, name: "Sony WH-1000XM5 Wireless Noise Canceling Headphones", category: "Audio", price: 348.00, rating: 4.8, reviewsCount: 3420, imageUrl: "https://images.unsplash.com/photo-1618366712010-f4ae9c647dcb", badge: "Partner Pick", description: "Industry-leading noise cancellation." },
+            { id: 2, name: "Apple Watch Series 9 [GPS 41mm] Smartwatch", category: "Wearables", price: 399.00, rating: 4.9, reviewsCount: 5120, imageUrl: "https://images.unsplash.com/photo-1546868871-7041f2a55e12", badge: "Billable Approved", description: "Always-On Retina display." },
+            { id: 3, name: "Logitech MX Master 3S Wireless Performance Mouse", category: "Electronics", price: 99.99, rating: 4.7, reviewsCount: 8940, imageUrl: "https://images.unsplash.com/photo-1527864550417-7fd91fc51a46", badge: "Analyst Favorite", description: "8K DPI optical sensor." },
+            { id: 4, name: "Keychron Q1 Pro QMK/VIA Wireless Mechanical Keyboard", category: "Electronics", price: 199.00, rating: 4.8, reviewsCount: 1280, imageUrl: "https://images.unsplash.com/photo-1595225476474-87563907a212", badge: "Top Rated", description: "Full CNC machined aluminum body." },
+            { id: 5, name: "Dell UltraSharp U2723QE 27-Inch 4K USB-C Hub Monitor", category: "Home & Office", price: 549.99, rating: 4.6, reviewsCount: 2150, imageUrl: "https://images.unsplash.com/photo-1527443224154-c4a3942d3acf", badge: "WBS Eligible", description: "IPS Black technology." },
+            { id: 6, name: "Bose SoundLink Flex Bluetooth Portable Speaker", category: "Audio", price: 149.00, rating: 4.8, reviewsCount: 14300, imageUrl: "https://images.unsplash.com/photo-1608043152269-423dbba4e7e1", badge: "Best Seller", description: "Waterproof & dustproof IP67." },
+            { id: 7, name: "Ergonomic Mesh Office Chair with Lumbar Support", category: "Home & Office", price: 279.00, rating: 4.5, reviewsCount: 4390, imageUrl: "https://images.unsplash.com/photo-1505843490538-5133c6c7d0e1", badge: "Stipend Approved", description: "Breathable elastic mesh." },
+            { id: 8, name: "Fujifilm X-T30 II Mirrorless Digital Camera", category: "Electronics", price: 899.00, rating: 4.9, reviewsCount: 980, imageUrl: "https://images.unsplash.com/photo-1516035069371-29a1b244cc32", badge: "Limited Stock", description: "26.1MP X-Trans CMOS 4 sensor." }
+        ];
+
+        async function fetchProducts() {
+            // If we already have products, we just filter them locally
+            if (allProducts.length === 0) {
+                try {
+                    const res = await fetch(`${API_BASE}/products`);
+                    if (!res.ok) throw new Error('API Error');
+                    allProducts = await res.json();
+                } catch (err) {
+                    allProducts = [...FALLBACK_PRODUCTS]; // Fallback
+                }
+            }
+            filterAndRender(); // Filter the local array
+        }
+
+        function filterAndRender() {
+            const query = searchInput.value.trim().toLowerCase();
+            const cat = currentFilterCategory;
+
+            filteredProducts = allProducts.filter(p => {
+                const matchesCat = (cat === 'all' || p.category.toLowerCase() === cat.toLowerCase());
+                const matchesQuery = (!query || 
+                    p.name.toLowerCase().includes(query) || 
+                    p.description.toLowerCase().includes(query)
+                );
+                return matchesCat && matchesQuery;
+            });
+
+            applySorting();
+        }
+
+        function handleSearch() {
+            currentFilterCategory = categorySelect.value;
+            filterAndRender(); // No backend call!
+        }
+
+        function filterByCategory(category) {
+            currentFilterCategory = category;
+            categorySelect.value = category;
+            resultsHeading.textContent = category === 'all'
+                ? 'Approved Consultant Deliverables'
+                : `${category} Deliverables`;
+            filterAndRender(); // No backend call!
+        }
+
+        function resetFilters() {
+            searchInput.value = '';
+            currentFilterCategory = 'all';
+            categorySelect.value = 'all';
+            currentSortOrder = 'featured';
+            document.getElementById('sort-select').value = 'featured';
+            resultsHeading.textContent = 'Approved Consultant Deliverables';
+            filterAndRender();
+        }
+
+        function sortProducts() {
+            currentSortOrder = document.getElementById('sort-select').value;
+            applySorting();
+        }
+
+        function scrollToGrid() {
+            document.getElementById('product-grid-anchor').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function renderProducts(list) {
+            resultsCount.textContent = `Showing ${list.length} items`;
+            if (list.length === 0) {
+                productGrid.innerHTML = '';
+                emptyState.classList.remove('hidden');
+                return;
+            }
+            emptyState.classList.add('hidden');
+            productGrid.innerHTML = list.map(p => `
+                <div class="bg-white border border-zinc-200 hover:border-zinc-950 transition flex flex-col justify-between group">
+                    <div>
+                        <div class="relative h-48 bg-zinc-100 overflow-hidden">
+                            <img src="${p.imageUrl}" alt="${p.name}" class="w-full h-full object-cover group-hover:scale-105 transition duration-300">
+                            ${p.badge ? `<span class="absolute top-3 left-3 bg-zinc-950 text-[#86BC25] text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-1">${p.badge}</span>` : ''}
+                        </div>
+                        <div class="p-4">
+                            <p class="text-[10px] font-bold uppercase tracking-widest text-zinc-400 mb-1">${p.category}</p>
+                            <h3 class="text-sm font-bold text-zinc-950 line-clamp-2 mb-2">${p.name}</h3>
+                            <p class="text-xs text-zinc-500 line-clamp-2 mb-3">${p.description}</p>
+                            <div class="flex items-center space-x-1 text-xs mb-3">
+                                <span class="text-[#86BC25] font-bold"><i class="fa-solid fa-star"></i> ${p.rating}</span>
+                                <span class="text-zinc-400">(${p.reviewsCount.toLocaleString()} peer reviews)</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="px-4 pb-4 pt-2 border-t border-zinc-100 flex items-center justify-between">
+                        <span class="text-lg font-extrabold text-zinc-950">$${p.price.toFixed(2)}</span>
+                        <button onclick="addToCart(${p.id})" class="bg-zinc-950 hover:bg-[#86BC25] text-white hover:text-zinc-950 text-xs font-bold uppercase tracking-wider px-3.5 py-2 transition flex items-center gap-1.5">
+                            <i class="fa-solid fa-plus"></i> Add
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function applySorting() {
+            let sorted = [...filteredProducts];
+            if (currentSortOrder === 'price-low') {
+                sorted.sort((a, b) => a.price - b.price);
+            } else if (currentSortOrder === 'price-high') {
+                sorted.sort((a, b) => b.price - a.price);
+            } else if (currentSortOrder === 'rating') {
+                sorted.sort((a, b) => b.rating - a.rating);
+            }
+            renderProducts(sorted);
+        }
+
+        // CART LOGIC & PERSISTENCE
+        function addToCart(productId) {
+            const product = allProducts.find(p => p.id === productId) || FALLBACK_PRODUCTS.find(p => p.id === productId);
+            if (!product) return;
+
+            const existing = cart.find(item => item.id === productId);
+            if (existing) {
+                existing.quantity += 1;
+            } else {
+                cart.push({ ...product, quantity: 1 });
+            }
+
+            updateCartUI();
+            showToast(`Added "${product.name}" to Expense Bag`, 'success');
+        }
+
+        function updateQuantity(productId, delta) {
+            const item = cart.find(i => i.id === productId);
+            if (!item) return;
+
+            item.quantity += delta;
+            if (item.quantity <= 0) {
+                cart = cart.filter(i => i.id !== productId);
+            }
+            updateCartUI();
+        }
+
+        function removeFromCart(productId) {
+            cart = cart.filter(i => i.id !== productId);
+            updateCartUI();
+        }
+
+        function updateCartUI() {
+            // 2. SAVE CART TO LOCAL STORAGE EVERY TIME IT UPDATES
+            localStorage.setItem('bazaar_cart', JSON.stringify(cart));
+
+            const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
+            const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+
+            document.getElementById('cart-badge').textContent = totalItems;
+            document.getElementById('cart-item-count-title').textContent = totalItems;
+            document.getElementById('cart-subtotal').textContent = `$${subtotal.toFixed(2)}`;
+            document.getElementById('cart-total').textContent = `$${subtotal.toFixed(2)}`;
+
+            const container = document.getElementById('cart-items-container');
+            if (cart.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-12">
+                        <i class="fa-solid fa-briefcase text-zinc-300 text-4xl mb-3"></i>
+                        <p class="text-sm font-bold text-zinc-700">Your expense bag is empty</p>
+                        <p class="text-xs text-zinc-400 mt-1">Add approved gear from the catalog to begin.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = cart.map(item => `
+                <div class="py-4 flex items-center gap-4">
+                    <img src="${item.imageUrl}" alt="${item.name}" class="w-16 h-16 object-cover bg-zinc-100 border border-zinc-200">
+                    <div class="flex-1 min-w-0">
+                        <h4 class="text-xs font-bold text-zinc-950 truncate">${item.name}</h4>
+                        <p class="text-xs font-extrabold text-[#6fa01b] mt-0.5">$${item.price.toFixed(2)}</p>
+                        <div class="flex items-center space-x-2 mt-2">
+                            <button onclick="updateQuantity(${item.id}, -1)" class="w-6 h-6 bg-zinc-100 hover:bg-zinc-200 text-zinc-900 text-xs font-bold flex items-center justify-center">-</button>
+                            <span class="text-xs font-bold px-1">${item.quantity}</span>
+                            <button onclick="updateQuantity(${item.id}, 1)" class="w-6 h-6 bg-zinc-100 hover:bg-zinc-200 text-zinc-900 text-xs font-bold flex items-center justify-center">+</button>
+                        </div>
+                    </div>
+                    <button onclick="removeFromCart(${item.id})" class="text-zinc-400 hover:text-rose-600 transition p-1" title="Remove item">
+                        <i class="fa-solid fa-trash-can text-sm"></i>
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        function toggleCartDrawer(open) {
+            const drawer = document.getElementById('cart-drawer');
+            const backdrop = document.getElementById('cart-backdrop');
+            const panel = document.getElementById('cart-panel');
+
+            if (open) {
+                drawer.classList.remove('hidden');
+                setTimeout(() => {
+                    backdrop.classList.remove('opacity-0');
+                    panel.classList.remove('translate-x-full');
+                }, 10);
+            } else {
+                backdrop.classList.add('opacity-0');
+                panel.classList.add('translate-x-full');
+                setTimeout(() => {
+                    drawer.classList.add('hidden');
+                }, 300);
+            }
+        }
+
+        async function checkout() {
+            if (cart.length === 0) {
+                showToast('Add at least one item before submitting.', 'error');
+                return;
+            }
+
+            const checkoutBtn = document.getElementById('checkout-btn');
+            checkoutBtn.disabled = true;
+            checkoutBtn.innerText = "Processing...";
+
+            const totalAmount = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+            const itemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
+
+            try {
+                const res = await fetch(`${API_BASE}/orders`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        username: currentUser || 'guest',
+                        totalAmount: Number(totalAmount.toFixed(2)),
+                        itemCount: itemCount
+                    })
+                });
+
+                const data = await res.json();
+                cart = [];
+                localStorage.removeItem('bazaar_cart'); // 3. CLEAR FROM STORAGE ON CHECKOUT
+                updateCartUI();
+                toggleCartDrawer(false);
+                showToast(`Order #${data.orderId} has been placed successfully!`, 'success');
+            } catch (err) {
+                showToast('Order failed. Please try again.', 'error');
+            } finally {
+                checkoutBtn.disabled = false;
+                checkoutBtn.innerText = "Submit Expense Order";
+            }
+        }
+
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            const colorClass = type === 'success' ? 'bg-zinc-950 border-l-4 border-[#86BC25]' : (type === 'error' ? 'bg-rose-700' : 'bg-zinc-800');
+            toast.className = `${colorClass} text-white text-xs font-semibold px-4 py-3 shadow-xl transition-all duration-300`;
+            toast.textContent = message;
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.classList.add('opacity-0');
+                setTimeout(() => toast.remove(), 300);
+            }, 2800);
+        }
+
+        searchInput.addEventListener('input', () => {
+            filterAndRender(); // Now frontend only
+        });
+
+        categorySelect.addEventListener('change', () => {
+            currentFilterCategory = categorySelect.value;
+            filterAndRender();
+        });
+
+        window.addEventListener('DOMContentLoaded', () => {
+            updateCartUI();
+            if (currentUser) {
+                unlockStorefront();
+            }
+        });
+    </script>
+</body>
+</html>
